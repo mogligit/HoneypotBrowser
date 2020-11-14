@@ -1,8 +1,8 @@
-import java.net.Socket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 
-public class HoneypotData {	
+public class HoneypotData implements Comparable<HoneypotData> {	
 	private LocalDateTime datetime;
 	private Host host;
 	private String sourceInt;
@@ -19,7 +19,7 @@ public class HoneypotData {
 	private String latitude;
 	private String longitude;
 	
-	public HoneypotData(String str) implements Comparable<HoneypotData> {
+	public HoneypotData(String str) {
 		String[] values = str.split(String.valueOf(Start.SV), -1);
 		
 		datetime = LocalDateTime.parse(values[0], DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
@@ -44,9 +44,20 @@ public class HoneypotData {
 	
 	@Override
 	public String toString() {
-		return String.format(formatDateTime(datetime) + "%s" + host + "%s" + sourceInt + "%s" + protocol.toString() + "%s" + packetType + "%s" + srcPort + "%s" + dptPort + "%s" + sourceIp + "%s" + countryCode + "%s" + countryName + "%s" + locale + "%s" + localeAbbr + "%s" + postalCode + "%s" + latitude + "%s" + longitude, Start.SV);
+		return formatDateTime(datetime) + Start.SV + host + Start.SV + sourceInt + Start.SV + protocol.toString() + Start.SV + packetType + Start.SV + srcPort + Start.SV + dptPort + Start.SV + sourceIp + Start.SV + countryCode + Start.SV + countryName + Start.SV + locale + Start.SV + localeAbbr + Start.SV + postalCode + Start.SV + latitude + Start.SV + longitude;
 	}
 	private String formatDateTime(LocalDateTime datetime) {
 		return datetime.format(DateTimeFormatter.ofPattern("dd/MM/yy HH:mm"));
 	}
+
+	@Override
+	public int compareTo(HoneypotData o) {
+		return this.datetime.compareTo(o.datetime);
+	}
+
+	static final Comparator<HoneypotData> countryOrder = new Comparator<HoneypotData>() {
+		public int compare(HoneypotData hpd1, HoneypotData hpd2) {
+			return hpd1.countryName.compareTo(hpd2.countryName);
+		}
+	};
 }
