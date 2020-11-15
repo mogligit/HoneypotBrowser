@@ -1,7 +1,9 @@
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -10,28 +12,34 @@ public class Start {
 	public static final char SV = ',';
 
 	public static void main(String[] args) {
-		List<HoneypotData> data;
-		data = new ArrayList<HoneypotData>();
+		List<HoneypotData> dataset;
+		dataset = new ArrayList<HoneypotData>();
 
 		try {
-			data = readFile("SampleDataset-Honeypots.csv");
+			dataset = readFile("SampleDataset-Honeypots.csv");
 			System.out.println("Dataset loaded correctly.");
 		} catch (FileNotFoundException e) {
 			System.out.println("FileNotFoundException. Dataset not found.");
 		}
 
-		switch (key) {
-			case value:
-				
+		removeDuplicates(dataset); // remove duplicate entries before anything else
+		System.out.println("Duplicate entries removed.");
+		System.out.println("Total: " + dataset.size() + " entries");
+
+		switch (menu()) {
+			case 1:
+				displayCountries(new ArrayList<>(dataset));
 				break;
-		
+
+			case 2:
+				displayHostsPerCountry(new ArrayList<>(dataset));
+				break;
+			case 3:
+				searchAttack(new ArrayList<>(dataset));
+				break;
 			default:
 				break;
 		}
-		// Collections.sort(data, HoneypotData.countryOrder);
-		// for (HoneypotData entry : data) {
-		// 	System.out.println(entry.toString());
-		// }
 	}
 
 	private static int menu() {
@@ -43,9 +51,122 @@ public class Start {
 		System.out.println("5. Search Host");
 		System.out.println("6. Top offending IP address");
 		System.out.println("7. Find geographically similar IP addresses");
+		System.out.println("0. QUIT");
 		System.out.print("\nPlease choose one: ");
 
-		return UserInput.integer(1, 7);
+		return UserInput.integer(0, 7);
+	}
+
+	private static void displayCountries(List<HoneypotData> dataset) {
+		List<String> countries = getCountryList(dataset); // always make a copy of data set
+		System.out.println("List of countries:");
+		int i = 0;
+		for (String country : countries) {
+			System.out.println(" - " + country);
+			i++;
+		}
+		System.out.println("Total of " + i + " countries.");
+	}
+
+	private static void displayHostsPerCountry(List<HoneypotData> dataset) {
+		System.out.println("Hosts attacked per country");
+
+		List<String> countryList = getCountryList(new ArrayList<>(dataset)); // Copy dataset so it doesn't get affected
+		Collections.sort(dataset, HoneypotData.countryComparator);
+
+		// Remove blank entries at the beginning
+		while (dataset.get(0).countryName.length() == 0) {
+			dataset.remove(0);
+		}
+
+		System.out.println("Input country: ");
+		String countryInput = UserInput.anyString();
+		if (!countryList.contains(countryInput)) {
+			System.out.println("Country was not found.");
+			return;
+		}
+
+		System.out.println("\nCountry: " + countryInput + "\nHosts attacked:");
+
+		List<String> hosts = new ArrayList<>();
+
+		for (HoneypotData entry : dataset) {
+			if (entry.countryName.equals(countryInput)) {
+				hosts.add(entry.host.toString());
+			}
+		}
+
+		Collections.sort(hosts);
+		removeDuplicates(hosts);
+		for (String hostString : hosts) {
+			System.out.println(" - " + hostString);
+		}
+
+	}
+
+	private static void searchAttack(List<HoneypotData> dataset) {
+		System.out.println("Search - press enter to leave blank");
+		HoneypotData searchModel = new HoneypotData();
+
+		System.out.print("Date/time (dd/MM/yyyy hh:mm): ");
+		searchModel.datetime = UserInput.datetime();
+
+		System.out.print("Host: ");
+		try {
+			searchModel.host = Host.getFrom(UserInput.anyStringOrNull());
+		} catch (Exception e) {
+			System.out.println("Host not valid. Leaving blank.");
+		}
+
+		System.out.print("Protocol: ");
+		try {
+			searchModel.protocol = Protocol.valueOf(UserInput.anyStringOrNull());
+		} catch (Exception e) {
+			System.out.println("Protocol not valid. Leaving blank.");
+		}
+
+		System.out.print("Source port: ");
+		searchModel.srcPort = UserInput.anyStringOrNull();
+
+		System.out.print("Destination port: ");
+		searchModel.dptPort = UserInput.anyStringOrNull();
+
+		System.out.print("Source IPv4: ");
+		searchModel.sourceIp = UserInput.anyStringOrNull();
+
+		System.out.print("Country: ");
+		searchModel.countryName = UserInput.anyStringOrNull();
+
+		System.out.print("Locale: ");
+		searchModel.locale = UserInput.anyStringOrNull();
+
+		System.out.println("\nResults: ");
+		int i = 0;
+		for (HoneypotData entry : dataset) {
+			if (entry.softEquals(searchModel)) {
+				System.out.println(entry.toString());
+				i++;
+			}
+		}
+		System.out.println("Total of " + i + " results.");
+	}
+
+	private static void searchIp(List<HoneypotData> dataset) {
+		System.out.print("Input IPv4 address: ");
+		
+	}
+
+	private static List<String> getCountryList(List<HoneypotData> dataset) {
+		removeDuplicates(dataset, HoneypotData.countryComparator);
+		Collections.sort(dataset, HoneypotData.countryComparator); // Nice alphabetical order
+		List<String> newDataset = new ArrayList<String>();
+
+		for (HoneypotData entry : dataset) {
+			if (entry.countryName.length() != 0) { // Remove empty entries
+				newDataset.add(entry.countryName);
+			}
+		}
+		return newDataset;
 	}
 
 	private static List<HoneypotData> readFile(String path) throws FileNotFoundException {
@@ -62,6 +183,37 @@ public class Start {
 		s.close();
 		return scanned;
 
+	}
+
+	// Removes duplicates using compareTo()
+	// This algorithm assumes that duplicates are contiguous
+	private static void removeDuplicates(List<HoneypotData> l, Comparator<HoneypotData> comparator) {
+		int i = 0;
+
+		do {
+			for (int j = i + 1; j < l.size(); j++) {
+				if (l.get(i).compareTo(l.get(j), comparator) == 0) {
+					l.remove(j);
+					j--;
+				}
+			}
+			i++;
+		} while (i < l.size() - 1);
+	}
+
+	// Removes whole entry duplicates using equals()
+	private static void removeDuplicates(List<?> l) {
+		int i = 0;
+
+		do {
+			for (int j = i + 1; j < l.size(); j++) {
+				if (l.get(i).equals(l.get(j))) {
+					l.remove(j);
+					j--;
+				}
+			}
+			i++;
+		} while (i < l.size() - 1);
 	}
 
 }
