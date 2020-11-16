@@ -2,17 +2,18 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 
 public class UserInput {
     public static final Scanner inputScanner = new Scanner(System.in);
 
     public static String anyString() {
-        return inputScanner.nextLine();
+        return anyString(false);
     }
-    
-    public static String anyStringOrNull() {
+
+    public static String anyString(boolean allowNull) {
         String in = inputScanner.nextLine();
-        if (in.length() == 0) {
+        if (allowNull && in.length() == 0) {
             return null;
         }
         return in;
@@ -40,24 +41,44 @@ public class UserInput {
     }
 
     public static LocalDateTime datetime() {
+        return datetime(false);
+    }
+    public static LocalDateTime datetime(boolean allowNull) {
         String in;
         LocalDateTime out = null;
-        boolean valid = false;
         do {
             in = anyString();
-            if (in.length() == 0) {
-                valid = true;
+            if (allowNull && in.length() == 0) {
+                return null;
             } else {
                 try {
                     out = LocalDateTime.parse(in, DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-                    valid = true;
+                    return out;
                 } catch (DateTimeParseException e) {
                     System.out.print("Could not parse date. Please try again: ");
                 }
             }
 
-        } while (!valid);
+        } while (true);
+    }
 
+    public static String ipAddress() {
+        return ipAddress(false);
+    }
+    public static String ipAddress(boolean allowNull) {
+        String zeroTo255 = "(\\d{1,2}|(0|1)\\" + "d{2}|2[0-4]\\d|25[0-5])";
+        String regex = zeroTo255 + "\\." + zeroTo255 + "\\." + zeroTo255 + "\\." + zeroTo255;
+
+        Pattern p = Pattern.compile(regex);
+
+        String out = anyString();
+        if (allowNull && out.length() == 0) {
+            return null;
+        }
+        while (!p.matcher(out).matches()) {
+            System.out.print("IP address not valid. Please try again: ");
+            out = anyString();
+        }
         return out;
     }
 
