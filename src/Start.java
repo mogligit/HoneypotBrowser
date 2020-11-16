@@ -3,8 +3,12 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.Map.Entry;
+import java.util.function.IntPredicate;
 
 public class Start {
 
@@ -42,6 +46,9 @@ public class Start {
 					break;
 				case 5:
 					searchHost(new ArrayList<>(dataset));
+					break;
+				case 6:
+					topOffendingIpAddress(new ArrayList<>(dataset));
 					break;
 				case 0:
 					return;
@@ -164,20 +171,14 @@ public class Start {
 	private static void searchIp(List<HoneypotData> dataset) {
 		System.out.print("Input IPv4 address: ");
 		String inputIp = UserInput.ipAddress();
-		List<HoneypotData> attacks = new ArrayList<>();
 
-		for (HoneypotData entry : dataset) {
-			if (entry.sourceIp.equals(inputIp)) {
-				attacks.add(entry);
-			}
-		}
+		List<HoneypotData> attacks = getAttacksFromIp(dataset, inputIp);
 
 		System.out.println("List of attacks from " + inputIp);
 		for (HoneypotData attack : attacks) {
 			System.out.println(attack.host.toString() + ", " + attack.datetime.toString());
 		}
 		System.out.println("Total of " + attacks.size() + " attacks.");
-
 	}
 
 	private static void searchHost(List<HoneypotData> dataset) {
@@ -206,7 +207,39 @@ public class Start {
 	}
 
 	private static void topOffendingIpAddress(List<HoneypotData> dataset) {
+		HashMap<String, Integer> ipAttackCount = new HashMap<>();
+		
+		for (HoneypotData entry : dataset) {
+			if (ipAttackCount.containsKey(entry.sourceIp)) {
+				int oldCount = ipAttackCount.get(entry.sourceIp);	//get old count
+				ipAttackCount.replace(entry.sourceIp, oldCount + 1);	//increment it
+			} else {
+				ipAttackCount.put(entry.sourceIp, 1);
+			}
+		}
 
+		int max = 0;
+		String topIp = "";
+		for (Entry<String, Integer> entry : ipAttackCount.entrySet()) { //finding max value
+			if (entry.getValue() > max) {
+				max = entry.getValue();
+				topIp = entry.getKey();
+			}
+		}
+		System.out.println("Top offending IP: " + topIp);
+
+		List<HoneypotData> attacks = getAttacksFromIp(dataset, topIp);
+
+		System.out.println("Attacks:");
+		for (HoneypotData attack : attacks) {
+			System.out.println(attack.host.toString() + ", " + attack.datetime.toString());
+		}
+		System.out.println("Total of " + attacks.size() + " attacks.");
+		System.out.println("(outputting it again in case you missed it) Top offending IP: " + topIp);
+	}
+
+	private static void findSimilarCoordinates() {
+		
 	}
 
 	private static List<String> getCountryList(List<HoneypotData> dataset) {
@@ -220,6 +253,18 @@ public class Start {
 			}
 		}
 		return newDataset;
+	}
+
+	private static List<HoneypotData> getAttacksFromIp(List<HoneypotData> dataset, String ip) {
+		List<HoneypotData> attacks = new ArrayList<>();
+
+		for (HoneypotData entry : dataset) {
+			if (entry.sourceIp.equals(ip)) {
+				attacks.add(entry);
+			}
+		}
+
+		return attacks;
 	}
 
 	private static List<HoneypotData> readFile(String path) throws FileNotFoundException {
