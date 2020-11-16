@@ -5,10 +5,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
 import java.util.Map.Entry;
-import java.util.function.IntPredicate;
+import java.util.Scanner;
 
 public class Start {
 
@@ -229,10 +227,6 @@ public class Start {
 		}
 		System.out.println("Total of " + attacks.size() + " attacks.");
 		System.out.println("(outputting it again in case you missed it) Top offending IP: " + topIp);
-	}
-
-	private static void findSimilarCoordinates() {
-
 	}
 
 	private static List<String> getCountryList(List<HoneypotData> dataset) {
