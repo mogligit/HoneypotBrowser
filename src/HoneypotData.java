@@ -27,7 +27,6 @@ public class HoneypotData implements Comparable<HoneypotData> {
 		} catch (Exception e) {
 			datetime = LocalDateTime.parse(values[0], DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 		}
-		
 
 		host = Host.getFrom(values[1]);
 		sourceInt = values[2];
@@ -121,11 +120,6 @@ public class HoneypotData implements Comparable<HoneypotData> {
 	static final Comparator<HoneypotData> countryComparator = new Comparator<HoneypotData>() {
 		public int compare(HoneypotData hpd1, HoneypotData hpd2) {
 			return hpd1.countryName.compareTo(hpd2.countryName);
-		}
-	};
-	static final Comparator<HoneypotData> hostComparator = new Comparator<HoneypotData>() {
-		public int compare(HoneypotData hpd1, HoneypotData hpd2) {
-			return hpd1.host.compareTo(hpd2.host);
 		}
 	};
 }
