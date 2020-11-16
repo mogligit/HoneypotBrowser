@@ -22,7 +22,12 @@ public class HoneypotData implements Comparable<HoneypotData> {
 	public HoneypotData(String str) {
 		String[] values = str.split(String.valueOf(Start.SV), -1);
 
-		datetime = LocalDateTime.parse(values[0], DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+		try {
+			datetime = LocalDateTime.parse(values[0], DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+		} catch (Exception e) {
+			datetime = LocalDateTime.parse(values[0], DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+		}
+		
 
 		host = Host.getFrom(values[1]);
 		sourceInt = values[2];

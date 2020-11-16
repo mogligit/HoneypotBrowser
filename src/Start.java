@@ -15,14 +15,14 @@ public class Start {
 		dataset = new ArrayList<HoneypotData>();
 
 		try {
-			dataset = readFile("SampleDataset-Honeypots.csv");
+			dataset = readFile("LargeDataset-Honeypots.csv");
 			System.out.println("Dataset loaded correctly.");
 		} catch (FileNotFoundException e) {
 			System.out.println("FileNotFoundException. Dataset not found.");
 		}
 
-		removeDuplicates(dataset); // remove duplicate entries before anything else
-		System.out.println("Duplicate entries removed.");
+		//removeDuplicates(dataset); // remove duplicate entries before anything else
+		//System.out.println("Duplicate entries removed.");
 		System.out.println("Total: " + dataset.size() + " entries");
 
 		do {
@@ -53,7 +53,7 @@ public class Start {
 	}
 
 	private static int menu() {
-		System.out.println("-- Honeypot attack browser --\n");
+		System.out.println("\n-- Honeypot attack browser --\n");
 		System.out.println("1. List all countries");
 		System.out.println("2. Hosts attacked by country and location");
 		System.out.println("3. Search attack");
@@ -203,6 +203,10 @@ public class Start {
 			System.out.println(attack.sourceIp + ", " + attack.countryName + ", " + attack.locale);
 		}
 		System.out.println("Total of " + attacks.size() + " attacks.");
+	}
+
+	private static void topOffendingIpAddress(List<HoneypotData> dataset) {
+
 	}
 
 	private static List<String> getCountryList(List<HoneypotData> dataset) {
