@@ -19,36 +19,70 @@ public class Start {
 		dataset = new ArrayList<HoneypotData>();
 
 		try {
+			
 			dataset = readFile("LargeDataset-Honeypots.csv");
+
+			
+
 			System.out.println("Dataset loaded correctly.");
 		} catch (FileNotFoundException e) {
 			System.out.println("FileNotFoundException. Dataset not found.");
 		}
 
-		//removeDuplicates(dataset); // remove duplicate entries before anything else
-		//System.out.println("Duplicate entries removed.");
 		System.out.println("Total: " + dataset.size() + " entries");
 
+
+		long startTime;
+		long endTime;
+		long duration;
 		do {
 			switch (menu()) {
 				case 1:
+					 startTime = System.nanoTime();
 					displayCountries(new ArrayList<>(dataset));
+
+					 endTime = System.nanoTime();
+			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
+			System.out.println(duration);
+
 					break;
 
 				case 2:
+				 startTime = System.nanoTime();
 					displayHostsPerCountry(new ArrayList<>(dataset));
+					 endTime = System.nanoTime();
+			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
+			System.out.println(duration);
 					break;
 				case 3:
+				 startTime = System.nanoTime();
 					searchAttack(new ArrayList<>(dataset));
+					 endTime = System.nanoTime();
+			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
+			System.out.println(duration);
 					break;
 				case 4:
+				 startTime = System.nanoTime();
 					searchIp(new ArrayList<>(dataset));
+					 endTime = System.nanoTime();
+			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
+			System.out.println(duration);
 					break;
 				case 5:
+				 startTime = System.nanoTime();
 					searchHost(new ArrayList<>(dataset));
+					 endTime = System.nanoTime();
+			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
+			System.out.println(duration);
 					break;
 				case 6:
+				 startTime = System.nanoTime();
 					topOffendingIpAddress(new ArrayList<>(dataset));
+
+					 endTime = System.nanoTime();
+			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
+			System.out.println(duration);
+
 					break;
 				case 0:
 					return;
@@ -62,7 +96,7 @@ public class Start {
 	private static int menu() {
 		System.out.println("\n-- Honeypot attack browser --\n");
 		System.out.println("1. List all countries");
-		System.out.println("2. Hosts attacked by country and location");
+		System.out.println("2. Hosts attacked by country");
 		System.out.println("3. Search attack");
 		System.out.println("4. Search IP address");
 		System.out.println("5. Search Host");
@@ -87,12 +121,6 @@ public class Start {
 		System.out.println("Hosts attacked per country");
 
 		List<String> countryList = getCountryList(new ArrayList<>(dataset)); // Copy dataset so it doesn't get affected
-		Collections.sort(dataset, HoneypotData.countryComparator);
-
-		// Remove blank entries at the beginning
-		while (dataset.get(0).countryName.length() == 0) {
-			dataset.remove(0);
-		}
 
 		System.out.print("Input country: ");
 		String countryInput = UserInput.anyString();
@@ -113,7 +141,7 @@ public class Start {
 
 		Collections.sort(hosts);
 		removeDuplicates(hosts);
-		
+
 		for (String hostString : hosts) {
 			System.out.println(" - " + hostString);
 		}
@@ -208,11 +236,11 @@ public class Start {
 
 	private static void topOffendingIpAddress(List<HoneypotData> dataset) {
 		HashMap<String, Integer> ipAttackCount = new HashMap<>();
-		
+
 		for (HoneypotData entry : dataset) {
 			if (ipAttackCount.containsKey(entry.sourceIp)) {
-				int oldCount = ipAttackCount.get(entry.sourceIp);	//get old count
-				ipAttackCount.replace(entry.sourceIp, oldCount + 1);	//increment it
+				int oldCount = ipAttackCount.get(entry.sourceIp); // get old count
+				ipAttackCount.replace(entry.sourceIp, oldCount + 1); // increment it
 			} else {
 				ipAttackCount.put(entry.sourceIp, 1);
 			}
@@ -220,7 +248,7 @@ public class Start {
 
 		int max = 0;
 		String topIp = "";
-		for (Entry<String, Integer> entry : ipAttackCount.entrySet()) { //finding max value
+		for (Entry<String, Integer> entry : ipAttackCount.entrySet()) { // finding max value
 			if (entry.getValue() > max) {
 				max = entry.getValue();
 				topIp = entry.getKey();
@@ -239,20 +267,20 @@ public class Start {
 	}
 
 	private static void findSimilarCoordinates() {
-		
+
 	}
 
 	private static List<String> getCountryList(List<HoneypotData> dataset) {
 		removeDuplicates(dataset, HoneypotData.countryComparator);
 		Collections.sort(dataset, HoneypotData.countryComparator); // Nice alphabetical order
-		List<String> newDataset = new ArrayList<String>();
+		List<String> countryList = new ArrayList<String>();
 
 		for (HoneypotData entry : dataset) {
-			if (entry.countryName.length() != 0) { // Remove empty entries
-				newDataset.add(entry.countryName);
+			if (entry.countryName.length() != 0) { // Filter out empty entries
+				countryList.add(entry.countryName);
 			}
 		}
-		return newDataset;
+		return countryList;
 	}
 
 	private static List<HoneypotData> getAttacksFromIp(List<HoneypotData> dataset, String ip) {
@@ -286,32 +314,26 @@ public class Start {
 	// Removes duplicates using compareTo()
 	// This algorithm assumes that duplicates are contiguous
 	private static void removeDuplicates(List<HoneypotData> l, Comparator<HoneypotData> comparator) {
-		int i = 0;
-
-		do {
+		for (int i = 0; i < l.size() - 1; i++) {
 			for (int j = i + 1; j < l.size(); j++) {
 				if (l.get(i).compareTo(l.get(j), comparator) == 0) {
 					l.remove(j);
 					j--;
 				}
 			}
-			i++;
-		} while (i < l.size() - 1);
+		}
 	}
 
 	// Removes whole entry duplicates using equals()
 	private static void removeDuplicates(List<?> l) {
-		int i = 0;
-
-		do {
+		for (int i = 0; i < l.size() - 1; i++) {
 			for (int j = i + 1; j < l.size(); j++) {
 				if (l.get(i).equals(l.get(j))) {
 					l.remove(j);
 					j--;
 				}
 			}
-			i++;
-		} while (i < l.size() - 1);
+		}
 	}
 
 }
