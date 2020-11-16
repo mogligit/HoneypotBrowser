@@ -30,59 +30,25 @@ public class Start {
 		}
 
 		System.out.println("Total: " + dataset.size() + " entries");
-
-
-		long startTime;
-		long endTime;
-		long duration;
 		do {
 			switch (menu()) {
 				case 1:
-					 startTime = System.nanoTime();
 					displayCountries(new ArrayList<>(dataset));
-
-					 endTime = System.nanoTime();
-			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
-			System.out.println(duration);
-
 					break;
-
 				case 2:
-				 startTime = System.nanoTime();
 					displayHostsPerCountry(new ArrayList<>(dataset));
-					 endTime = System.nanoTime();
-			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
-			System.out.println(duration);
 					break;
 				case 3:
-				 startTime = System.nanoTime();
 					searchAttack(new ArrayList<>(dataset));
-					 endTime = System.nanoTime();
-			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
-			System.out.println(duration);
 					break;
 				case 4:
-				 startTime = System.nanoTime();
 					searchIp(new ArrayList<>(dataset));
-					 endTime = System.nanoTime();
-			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
-			System.out.println(duration);
 					break;
 				case 5:
-				 startTime = System.nanoTime();
 					searchHost(new ArrayList<>(dataset));
-					 endTime = System.nanoTime();
-			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
-			System.out.println(duration);
 					break;
 				case 6:
-				 startTime = System.nanoTime();
 					topOffendingIpAddress(new ArrayList<>(dataset));
-
-					 endTime = System.nanoTime();
-			 duration = ((endTime - startTime) / 1000000); // divide by 1000000 to get milliseconds.
-			System.out.println(duration);
-
 					break;
 				case 0:
 					return;
@@ -101,7 +67,6 @@ public class Start {
 		System.out.println("4. Search IP address");
 		System.out.println("5. Search Host");
 		System.out.println("6. Top offending IP address");
-		System.out.println("7. Find geographically similar IP addresses");
 		System.out.println("0. QUIT");
 		System.out.print("\nPlease choose one: ");
 
