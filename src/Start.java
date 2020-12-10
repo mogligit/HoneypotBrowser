@@ -72,32 +72,34 @@ public class Start {
 	}
 
 	private static void displayCountries(List<HoneypotData> dataset) {
-		List<String> countries = getCountryList(dataset); // always make a copy of data set
+		List<String> countryList = new ArrayList<>(getCountryList(dataset).keySet());
+		Collections.sort(countryList);	// nice alphabetical order
+
 		System.out.println("List of countries:");
-		for (String country : countries) {
+		for (String country : countryList) {
 			System.out.println(" - " + country);
 		}
-		System.out.println("Total of " + countries.size() + " countries.");
+		System.out.println("Total of " + countryList.size() + " countries.");
 	}
 
 	private static void displayHostsPerCountry(List<HoneypotData> dataset) {
 		System.out.println("Hosts attacked per country");
 
-		List<String> countryList = getCountryList(new ArrayList<>(dataset)); // Copy dataset so it doesn't get affected
+		HashMap<String, ArrayList<HoneypotData>> countryDataMap = getCountryList(dataset);
 
-		System.out.print("Input country: ");
-		String countryInput = UserInput.anyString();
-		if (!countryList.contains(countryInput)) {
+		System.out.print("Input country or enter to show all: ");
+		String input = UserInput.anyString();
+		if (!countryDataMap.containsKey(input)) {
 			System.out.println("Country was not found.");
 			return;
 		}
 
-		System.out.println("\nCountry: " + countryInput + "\nHosts attacked:");
+		System.out.println("\nCountry: " + input + "\nHosts attacked:");
 
 		List<String> hosts = new ArrayList<>();
 
 		for (HoneypotData entry : dataset) {
-			if (entry.countryName.equals(countryInput)) {
+			if (entry.countryName.equals(input)) {
 				hosts.add(entry.host.toString());
 			}
 		}
@@ -229,17 +231,16 @@ public class Start {
 		System.out.println("(outputting it again in case you missed it) Top offending IP: " + topIp);
 	}
 
-	private static List<String> getCountryList(List<HoneypotData> dataset) {
-		removeDuplicates(dataset, HoneypotData.countryComparator);
-		Collections.sort(dataset, HoneypotData.countryComparator); // Nice alphabetical order
-		List<String> countryList = new ArrayList<String>();
-
-		for (HoneypotData entry : dataset) {
-			if (entry.countryName.length() != 0) { // Filter out empty entries
-				countryList.add(entry.countryName);
+	// HashMap with countries as keys, and array of entries containing that country as values
+	private static HashMap<String, ArrayList<HoneypotData>> getCountryList(List<HoneypotData> dataset) {
+		HashMap<String, ArrayList<HoneypotData>> countryMap = new HashMap<>();
+		for (int i = 0; i < dataset.size(); i++) {	// loop through dataset
+			if (!countryMap.containsKey(dataset.get(i).countryName)) {	
+				countryMap.put(dataset.get(i).countryName, new ArrayList<HoneypotData>());
 			}
+			countryMap.get(dataset.get(i).countryName).add(dataset.get(i));
 		}
-		return countryList;
+		return countryMap;
 	}
 
 	private static List<HoneypotData> getAttacksFromIp(List<HoneypotData> dataset, String ip) {
