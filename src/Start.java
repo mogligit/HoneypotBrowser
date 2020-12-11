@@ -2,33 +2,28 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Scanner;
 
 public class Start {
 
-	public static final char SV = ',';
+	public static final char SEPARATION_CHAR = ',';
 
 	public static void main(String[] args) {
-		List<HoneypotData> dataset;
+		ArrayList<HoneypotData> dataset;
 		dataset = new ArrayList<HoneypotData>();
 
 		try {
-			
-			dataset = readFile("LargeDataset-Honeypots.csv");
-
-			
-
+			dataset = readFile("LargeDataset-Honeypots.csv");		
 			System.out.println("Dataset loaded correctly.");
 		} catch (FileNotFoundException e) {
 			System.out.println("FileNotFoundException. Dataset not found.");
 		}
 
 		System.out.println("Total: " + dataset.size() + " entries");
-		do {
+		while(true) {
 			switch (menu()) {
 				case 1:
 					displayCountries(new ArrayList<>(dataset));
@@ -53,7 +48,7 @@ public class Start {
 				default:
 					break;
 			}
-		} while (true);
+		}
 
 	}
 
@@ -65,14 +60,15 @@ public class Start {
 		System.out.println("4. Search IP address");
 		System.out.println("5. Search Host");
 		System.out.println("6. Top offending IP address");
+		System.out.println("7. Find geographically similar attacks");
 		System.out.println("0. QUIT");
 		System.out.print("\nPlease choose one: ");
 
 		return UserInput.integer(0, 7);
 	}
 
-	private static void displayCountries(List<HoneypotData> dataset) {
-		List<String> countryList = new ArrayList<>(getCountryList(dataset).keySet());
+	private static void displayCountries(ArrayList<HoneypotData> dataset) {
+		ArrayList<String> countryList = new ArrayList<>(toHashMap(dataset, HoneypotData.COUNTRYNAME_INDEX).keySet());	// Get list of countries
 		Collections.sort(countryList);	// nice alphabetical order
 
 		System.out.println("List of countries:");
@@ -82,99 +78,138 @@ public class Start {
 		System.out.println("Total of " + countryList.size() + " countries.");
 	}
 
-	private static void displayHostsPerCountry(List<HoneypotData> dataset) {
+	private static void displayHostsPerCountry(ArrayList<HoneypotData> dataset) {
 		System.out.println("Hosts attacked per country");
 
-		HashMap<String, ArrayList<HoneypotData>> countryDataMap = getCountryList(dataset);
+		HashMap<String, ArrayList<HoneypotData>> countryDataMap = toHashMap(dataset, HoneypotData.COUNTRYNAME_INDEX);
 
-		System.out.print("Input country or enter to show all: ");
+		System.out.print("Input country: ");
 		String input = UserInput.anyString();
+
 		if (!countryDataMap.containsKey(input)) {
 			System.out.println("Country was not found.");
 			return;
 		}
 
+		// Gets list of hosts attacked by this country and puts them in a linear array to then remove duplicates
+		ArrayList<Host> hosts = new ArrayList<>();
+		for (HoneypotData entry : countryDataMap.get(input)) {
+			hosts.add(entry.getHost());
+		}
+		// Remove duplicates
+		hosts = removeDuplicates(hosts);
+
+		// Output		
 		System.out.println("\nCountry: " + input + "\nHosts attacked:");
-
-		List<String> hosts = new ArrayList<>();
-
-		for (HoneypotData entry : dataset) {
-			if (entry.countryName.equals(input)) {
-				hosts.add(entry.host.toString());
-			}
+		for (Host host : hosts) {
+			System.out.println(" - " + host.toString());
 		}
 
-		Collections.sort(hosts);
-		removeDuplicates(hosts);
-
-		for (String hostString : hosts) {
-			System.out.println(" - " + hostString);
-		}
 		System.out.println("Total of " + hosts.size());
 
 	}
 
-	private static void searchAttack(List<HoneypotData> dataset) {
+	private static void searchAttack(ArrayList<HoneypotData> dataset) {
 		System.out.println("Search - press enter to leave blank");
-		HoneypotData searchModel = new HoneypotData();
+		String searchString = "";
+		HoneypotData searchModel;
 
 		System.out.print("Date/time (dd/MM/yyyy hh:mm): ");
-		searchModel.datetime = UserInput.datetime(true);
+		searchString += UserInput.datetime(true) + SEPARATION_CHAR;
 
 		System.out.print("Host: ");
 		try {
-			searchModel.host = Host.getFrom(UserInput.anyString(true));
+			searchString += Host.getFrom(UserInput.anyString(true));
 		} catch (Exception e) {
 			System.out.println("Host not valid. Leaving blank.");
+		} finally {
+			searchString += SEPARATION_CHAR;
 		}
+
+		searchString += SEPARATION_CHAR;	// Comma for sourceInt
 
 		System.out.print("Protocol: ");
 		try {
-			searchModel.protocol = Protocol.valueOf(UserInput.anyString(true));
+			searchString += Protocol.valueOf(UserInput.anyString(true));
 		} catch (Exception e) {
 			System.out.println("Protocol not valid. Leaving blank.");
+		} finally {
+			searchString += SEPARATION_CHAR;
 		}
+
+		searchString += SEPARATION_CHAR;	// Comma for packetType
 
 		System.out.print("Source port: ");
-		searchModel.srcPort = UserInput.anyString(true);
+		searchString += UserInput.anyString(true) + SEPARATION_CHAR;
 
 		System.out.print("Destination port: ");
-		searchModel.dptPort = UserInput.anyString(true);
+		searchString += UserInput.anyString(true) + SEPARATION_CHAR;
 
 		System.out.print("Source IPv4: ");
-		searchModel.sourceIp = UserInput.ipAddress(true);
+		searchString += UserInput.ipAddress(true) + SEPARATION_CHAR;
+
+		searchString += SEPARATION_CHAR;	// Comma for country code
 
 		System.out.print("Country: ");
-		searchModel.countryName = UserInput.anyString(true);
+		searchString += UserInput.anyString(true) + SEPARATION_CHAR;
 
 		System.out.print("Locale: ");
-		searchModel.locale = UserInput.anyString(true);
+		searchString += UserInput.anyString(true) + SEPARATION_CHAR;
+
+		searchString += ",,,";	// Comma for remaining empty fields
+		searchModel = new HoneypotData(searchString);
 
 		System.out.println("\nResults: ");
-		int i = 0;
-		for (HoneypotData entry : dataset) {
-			if (entry.softEquals(searchModel)) {
-				System.out.println(entry.toString());
-				i++;
+		
+		// Puts entries in a hashmap with the first search criterion that isn't null as key
+		
+		printArray(search(searchModel, dataset));
+	}
+	private static ArrayList<HoneypotData> search(HoneypotData searchModel, ArrayList<HoneypotData> dataset) {
+		 int i = findNextFieldIndex(searchModel);
+		 if (i == -1) {
+			 return dataset;
+		 }
+		 
+		 ArrayList<HoneypotData> results = new ArrayList<>();
+		 for (HoneypotData entry : dataset) {
+			 if (searchModel.getValueArray()[i].equals(entry.getValueArray()[i])) {
+				 results.add(entry);
+			 }
+		 }
+
+		 searchModel.getValueArray()[i] = "";	// Removes this search criterion so it can move on to the next
+
+		 return search(searchModel, results);
+	}
+	private static int findNextFieldIndex(HoneypotData entry) {
+		for (int i = 0; i < entry.getValueArray().length; i++) {
+			if (entry.getValueArray()[i].length() != 0) {
+				return i;
 			}
 		}
+		return -1;
+	}
+	private static void printArray(ArrayList<HoneypotData> array) {
+		int i = 0;
+		for(HoneypotData entry : array) {
+			System.out.println(entry.toString());
+			i++;
+		}
+
 		System.out.println("Total of " + i + " results.");
 	}
 
-	private static void searchIp(List<HoneypotData> dataset) {
+
+	private static void searchIp(ArrayList<HoneypotData> dataset) {
 		System.out.print("Input IPv4 address: ");
 		String inputIp = UserInput.ipAddress();
+		HoneypotData searchModel = new HoneypotData(",,,,,,," + inputIp + ",,,,,,,");
 
-		List<HoneypotData> attacks = getAttacksFromIp(dataset, inputIp);
-
-		System.out.println("List of attacks from " + inputIp);
-		for (HoneypotData attack : attacks) {
-			System.out.println(attack.host.toString() + ", " + attack.datetime.toString());
-		}
-		System.out.println("Total of " + attacks.size() + " attacks.");
+		printArray(search(searchModel, dataset));
 	}
 
-	private static void searchHost(List<HoneypotData> dataset) {
+	private static void searchHost(ArrayList<HoneypotData> dataset) {
 		System.out.print("Input host name: ");
 		Host inputHost;
 		try {
@@ -184,70 +219,53 @@ public class Start {
 			return;
 		}
 
-		List<HoneypotData> attacks = new ArrayList<>();
+		HoneypotData searchModel = new HoneypotData(SEPARATION_CHAR+ inputHost.toString() + ",,,,,,,,,,,,,");
 
-		for (HoneypotData entry : dataset) {
-			if (entry.host.equals(inputHost)) {
-				attacks.add(entry);
-			}
-		}
-
-		System.out.println("List of attacks to host " + inputHost);
-		for (HoneypotData attack : attacks) {
-			System.out.println(attack.sourceIp + ", " + attack.countryName + ", " + attack.locale);
-		}
-		System.out.println("Total of " + attacks.size() + " attacks.");
+		printArray(search(searchModel, dataset));
 	}
 
-	private static void topOffendingIpAddress(List<HoneypotData> dataset) {
-		HashMap<String, Integer> ipAttackCount = new HashMap<>();
+	private static void topOffendingIpAddress(ArrayList<HoneypotData> dataset) {
+		HashMap<String, ArrayList<HoneypotData>> srcIpMap = toHashMap(dataset, HoneypotData.SRCIP_INDEX);
 
-		for (HoneypotData entry : dataset) {
-			if (ipAttackCount.containsKey(entry.sourceIp)) {
-				int oldCount = ipAttackCount.get(entry.sourceIp); // get old count
-				ipAttackCount.replace(entry.sourceIp, oldCount + 1); // increment it
-			} else {
-				ipAttackCount.put(entry.sourceIp, 1);
+		if (srcIpMap.size() == 0) {
+			return;
+		}
+
+		int topSize = 0;
+		String topIp = "";	// Won't let me build if it isn't initialised even though it'll never be null
+		for (String srcIp : srcIpMap.keySet()) {
+			int currentSize = srcIpMap.get(srcIp).size();
+			if (currentSize > topSize) {
+				topSize = currentSize;
+				topIp = srcIp;
 			}
 		}
 
-		int max = 0;
-		String topIp = "";
-		for (Entry<String, Integer> entry : ipAttackCount.entrySet()) { // finding max value
-			if (entry.getValue() > max) {
-				max = entry.getValue();
-				topIp = entry.getKey();
-			}
+		System.out.print("Output attacks by this address? (Y/N): ");
+		if (UserInput.bool()) {
+			printArray(srcIpMap.get(topIp));
 		}
-		System.out.println("Top offending IP: " + topIp);
-
-		List<HoneypotData> attacks = getAttacksFromIp(dataset, topIp);
-
-		System.out.println("Attacks:");
-		for (HoneypotData attack : attacks) {
-			System.out.println(attack.host.toString() + ", " + attack.datetime.toString());
-		}
-		System.out.println("Total of " + attacks.size() + " attacks.");
-		System.out.println("(outputting it again in case you missed it) Top offending IP: " + topIp);
+		
+		System.out.println("Top offending IP address: " + topIp);
 	}
 
-	// HashMap with countries as keys, and array of entries containing that country as values
-	private static HashMap<String, ArrayList<HoneypotData>> getCountryList(List<HoneypotData> dataset) {
-		HashMap<String, ArrayList<HoneypotData>> countryMap = new HashMap<>();
+	// HashMap with a specified field as keys, and array of entries that contain those values
+	private static HashMap<String, ArrayList<HoneypotData>> toHashMap(ArrayList<HoneypotData> dataset, int key) {
+		HashMap<String, ArrayList<HoneypotData>> hMap = new HashMap<>();
 		for (int i = 0; i < dataset.size(); i++) {	// loop through dataset
-			if (!countryMap.containsKey(dataset.get(i).countryName)) {	
-				countryMap.put(dataset.get(i).countryName, new ArrayList<HoneypotData>());
+			if (!hMap.containsKey(dataset.get(i).getValueArray()[key])) {	
+				hMap.put(dataset.get(i).getValueArray()[key], new ArrayList<HoneypotData>());
 			}
-			countryMap.get(dataset.get(i).countryName).add(dataset.get(i));
+			hMap.get(dataset.get(i).getValueArray()[key]).add(dataset.get(i));
 		}
-		return countryMap;
+		return hMap;
 	}
 
 	private static List<HoneypotData> getAttacksFromIp(List<HoneypotData> dataset, String ip) {
 		List<HoneypotData> attacks = new ArrayList<>();
 
 		for (HoneypotData entry : dataset) {
-			if (entry.sourceIp.equals(ip)) {
+			if (entry.getSourceIp().equals(ip)) {
 				attacks.add(entry);
 			}
 		}
@@ -255,12 +273,12 @@ public class Start {
 		return attacks;
 	}
 
-	private static List<HoneypotData> readFile(String path) throws FileNotFoundException {
+	private static ArrayList<HoneypotData> readFile(String path) throws FileNotFoundException {
 		FileReader fr = new FileReader(path);
 
 		Scanner s = new Scanner(fr);
 
-		List<HoneypotData> scanned = new ArrayList<HoneypotData>();
+		ArrayList<HoneypotData> scanned = new ArrayList<HoneypotData>();
 		s.nextLine(); // skip line with headers
 		while (s.hasNext()) {
 			scanned.add(new HoneypotData(s.nextLine()));
@@ -271,29 +289,15 @@ public class Start {
 
 	}
 
-	// Removes duplicates using compareTo()
-	// This algorithm assumes that duplicates are contiguous
-	private static void removeDuplicates(List<HoneypotData> l, Comparator<HoneypotData> comparator) {
-		for (int i = 0; i < l.size() - 1; i++) {
-			for (int j = i + 1; j < l.size(); j++) {
-				if (l.get(i).compareTo(l.get(j), comparator) == 0) {
-					l.remove(j);
-					j--;
-				}
-			}
+	// Removes duplicates using a hashset
+	private static <E> ArrayList<E> removeDuplicates(ArrayList<E> l) {
+		HashSet<E> hashes = new HashSet<>();
+		for (E item : l) {
+			hashes.add(item);
 		}
-	}
 
-	// Removes whole entry duplicates using equals()
-	private static void removeDuplicates(List<?> l) {
-		for (int i = 0; i < l.size() - 1; i++) {
-			for (int j = i + 1; j < l.size(); j++) {
-				if (l.get(i).equals(l.get(j))) {
-					l.remove(j);
-					j--;
-				}
-			}
-		}
+		return new ArrayList<>(hashes);
+
 	}
 
 }
