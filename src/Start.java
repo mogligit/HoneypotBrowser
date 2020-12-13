@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Scanner;
 
 public class Start {
@@ -13,7 +12,7 @@ public class Start {
 
 	public static void main(String[] args) {
 		ArrayList<HoneypotData> dataset;
-		dataset = new ArrayList<HoneypotData>();
+		dataset = new ArrayList<>();
 
 		try {
 			dataset = readFile("LargeDataset-Honeypots.csv");		
@@ -42,6 +41,9 @@ public class Start {
 					break;
 				case 6:
 					topOffendingIpAddress(new ArrayList<>(dataset));
+					break;
+				case 7:
+					findSimilarAttacks(new ArrayList<>(dataset));
 					break;
 				case 0:
 					return;
@@ -72,10 +74,7 @@ public class Start {
 		Collections.sort(countryList);	// nice alphabetical order
 
 		System.out.println("List of countries:");
-		for (String country : countryList) {
-			System.out.println(" - " + country);
-		}
-		System.out.println("Total of " + countryList.size() + " countries.");
+		printArray(countryList.toArray());
 	}
 
 	private static void displayHostsPerCountry(ArrayList<HoneypotData> dataset) {
@@ -163,8 +162,10 @@ public class Start {
 		
 		// Puts entries in a hashmap with the first search criterion that isn't null as key
 		
-		printArray(search(searchModel, dataset));
+		printArray(search(searchModel, dataset).toArray());
 	}
+
+	// Recursive search
 	private static ArrayList<HoneypotData> search(HoneypotData searchModel, ArrayList<HoneypotData> dataset) {
 		 int i = findNextFieldIndex(searchModel);
 		 if (i == -1) {
@@ -173,26 +174,26 @@ public class Start {
 		 
 		 ArrayList<HoneypotData> results = new ArrayList<>();
 		 for (HoneypotData entry : dataset) {
-			 if (searchModel.getValueArray()[i].equals(entry.getValueArray()[i])) {
+			 if (searchModel.getFieldFromIndex(i).equals(entry.getFieldFromIndex(i))) {
 				 results.add(entry);
 			 }
 		 }
 
-		 searchModel.getValueArray()[i] = "";	// Removes this search criterion so it can move on to the next
+		 searchModel.setFieldFromIndex(i, null);	// Removes this search criterion so it can move on to the next
 
 		 return search(searchModel, results);
 	}
 	private static int findNextFieldIndex(HoneypotData entry) {
-		for (int i = 0; i < entry.getValueArray().length; i++) {
-			if (entry.getValueArray()[i].length() != 0) {
+		for (int i = 0; i < 16; i++) {
+			if (entry.getFieldFromIndex(i) != null) {
 				return i;
 			}
 		}
 		return -1;
 	}
-	private static void printArray(ArrayList<HoneypotData> array) {
+	private static void printArray(Object[] array) {
 		int i = 0;
-		for(HoneypotData entry : array) {
+		for(Object entry : array) {
 			System.out.println(entry.toString());
 			i++;
 		}
@@ -206,7 +207,7 @@ public class Start {
 		String inputIp = UserInput.ipAddress();
 		HoneypotData searchModel = new HoneypotData(",,,,,,," + inputIp + ",,,,,,,");
 
-		printArray(search(searchModel, dataset));
+		printArray(search(searchModel, dataset).toArray());
 	}
 
 	private static void searchHost(ArrayList<HoneypotData> dataset) {
@@ -221,7 +222,7 @@ public class Start {
 
 		HoneypotData searchModel = new HoneypotData(SEPARATION_CHAR+ inputHost.toString() + ",,,,,,,,,,,,,");
 
-		printArray(search(searchModel, dataset));
+		printArray(search(searchModel, dataset).toArray());
 	}
 
 	private static void topOffendingIpAddress(ArrayList<HoneypotData> dataset) {
@@ -243,10 +244,48 @@ public class Start {
 
 		System.out.print("Output attacks by this address? (Y/N): ");
 		if (UserInput.bool()) {
-			printArray(srcIpMap.get(topIp));
+			printArray(srcIpMap.get(topIp).toArray());
 		}
 		
 		System.out.println("Top offending IP address: " + topIp);
+	}
+
+	private static void findSimilarAttacks(ArrayList<HoneypotData> dataset) {
+		System.out.print("Please enter an IP address to find close attacks to (within 1 degree): ");
+		String srcIp = UserInput.ipAddress();
+
+		HoneypotData ipSearchModel = new HoneypotData();
+		ipSearchModel.setSrcIp(srcIp);
+
+		HashMap<String, ArrayList<HoneypotData>> ipMap = toHashMap(dataset, HoneypotData.SRCIP_INDEX);
+
+		if (!ipMap.containsKey(srcIp)) {
+			System.out.println("This IP address does not exist in the dataset. Exiting\n");
+			return;
+		}
+		if (ipMap.get(srcIp).get(0).getCoords() == null) {
+			System.out.print("This IP address does not have any coordinates. Please try another IP: ");
+			srcIp = UserInput.ipAddress();
+		}
+
+		Coordinates coordsModel = ipMap.get(srcIp).get(0).getCoords();
+
+		ArrayList<String> similarIps = new ArrayList<>();
+		for (String ipEntry : ipMap.keySet()) {
+			if (coordsModel.equals(ipMap.get(ipEntry).get(0).getCoords())) {
+				similarIps.add(ipEntry);
+			}
+		}
+		
+		System.out.println("The following IP addresses are located within 1 degree of latitude and longitude of the given IP:");
+		
+		int i = 0;
+		for (String ip : similarIps) {
+			System.out.println(" - " + ip);
+			i++;
+		}
+		System.out.println("Total of " + i + " results.");
+		
 	}
 
 	// HashMap with a specified field as keys, and array of entries that contain those values
@@ -261,24 +300,12 @@ public class Start {
 		return hMap;
 	}
 
-	private static List<HoneypotData> getAttacksFromIp(List<HoneypotData> dataset, String ip) {
-		List<HoneypotData> attacks = new ArrayList<>();
-
-		for (HoneypotData entry : dataset) {
-			if (entry.getSourceIp().equals(ip)) {
-				attacks.add(entry);
-			}
-		}
-
-		return attacks;
-	}
-
 	private static ArrayList<HoneypotData> readFile(String path) throws FileNotFoundException {
 		FileReader fr = new FileReader(path);
 
 		Scanner s = new Scanner(fr);
 
-		ArrayList<HoneypotData> scanned = new ArrayList<HoneypotData>();
+		ArrayList<HoneypotData> scanned = new ArrayList<>();
 		s.nextLine(); // skip line with headers
 		while (s.hasNext()) {
 			scanned.add(new HoneypotData(s.nextLine()));

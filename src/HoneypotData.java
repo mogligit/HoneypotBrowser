@@ -20,6 +20,7 @@ public class HoneypotData implements Comparable<HoneypotData> {
 	private String postalCode;
 	private String latitude;
 	private String longitude;
+	private Coordinates coords;
 
 	// Set of constants to specify where in the string array these are located
 	public static final int DATETIME_INDEX = 0;
@@ -37,7 +38,93 @@ public class HoneypotData implements Comparable<HoneypotData> {
 	public static final int POSTALCODE_INDEX = 12;
 	public static final int LATITUDE_INDEX = 13;
 	public static final int LONGITUDE_INDEX = 14;
+	public static final int COORDINATES_INDEX = 15;
 
+	// A makeshift attempt at making this object iterable. Very spaghetti
+	public Object getFieldFromIndex(int i) {
+		switch (i) {
+			case DATETIME_INDEX:
+				return this.datetime;
+			case HOST_INDEX:
+				return this.host;
+			case SRCIPINT_INDEX:
+				return this.srcIpInt;
+			case PROTOCOL_INDEX:
+				return this.protocol;
+			case PACKETTYPE_INDEX:
+				return this.packetType;
+			case SRCPORT_INDEX:
+				return this.srcPort;
+			case DSTPORT_INDEX:
+				return this.dstPort;
+			case SRCIP_INDEX:
+				return this.srcIp;
+			case COUNTRYCODE_INDEX:
+				return this.countryCode;
+			case COUNTRYNAME_INDEX:
+				return this.countryName;
+			case LOCALE_INDEX:
+				return this.locale;
+			case LOCALEABBR_INDEX:
+				return this.localeAbbr;
+			case POSTALCODE_INDEX:
+				return this.postalCode;
+			case COORDINATES_INDEX:
+				return this.coords;
+			default:
+				return null;
+		}
+	}
+
+	// I know it's painful
+	public void setFieldFromIndex(int i, Object value) {
+		switch (i) {
+			case DATETIME_INDEX:
+				this.datetime = (LocalDateTime) value;
+				break;
+			case HOST_INDEX:
+				this.host = (Host) value;
+				break;
+			case SRCIPINT_INDEX:
+				this.srcIpInt = (String) value;
+				break;
+			case PROTOCOL_INDEX:
+				this.protocol = (Protocol) value;
+				break;
+			case PACKETTYPE_INDEX:
+				this.packetType = (String) value;
+				break;
+			case SRCPORT_INDEX:
+				this.srcPort = (String) value;
+				break;
+			case DSTPORT_INDEX:
+				this.dstPort = (String) value;
+				break;
+			case SRCIP_INDEX:
+				this.srcIp = (String) value;
+				break;
+			case COUNTRYCODE_INDEX:
+				this.countryCode = (String) value;
+				break;
+			case COUNTRYNAME_INDEX:
+				this.countryName = (String) value;
+				break;
+			case LOCALE_INDEX:
+				this.locale = (String) value;
+				break;
+			case LOCALEABBR_INDEX:
+				this.localeAbbr = (String) value;
+				break;
+			case POSTALCODE_INDEX:
+				this.postalCode = (String) value;
+				break;
+			case COORDINATES_INDEX:
+				this.coords = (Coordinates) value;
+				break;
+			default:
+				throw new ArrayIndexOutOfBoundsException();
+		}
+	}
 
 	public HoneypotData(String str) {
 		String[] csvValues = str.split(String.valueOf(Start.SEPARATION_CHAR), -1);
@@ -69,7 +156,7 @@ public class HoneypotData implements Comparable<HoneypotData> {
 		packetType = csvValues[PACKETTYPE_INDEX];
 		srcPort = csvValues[SRCPORT_INDEX];
 		dstPort = csvValues[DSTPORT_INDEX];
-		srcIp = csvValues[SRCIPINT_INDEX];
+		srcIp = csvValues[SRCIP_INDEX];
 		countryCode = csvValues[COUNTRYCODE_INDEX];
 		countryName = csvValues[COUNTRYNAME_INDEX];
 		locale = csvValues[LOCALE_INDEX];
@@ -78,11 +165,19 @@ public class HoneypotData implements Comparable<HoneypotData> {
 		latitude = csvValues[LATITUDE_INDEX];
 		longitude = csvValues[LONGITUDE_INDEX];
 
+		if (!(csvValues[LATITUDE_INDEX].isEmpty() || csvValues[LONGITUDE_INDEX].isEmpty())) {
+			coords = new Coordinates(Float.parseFloat(csvValues[LATITUDE_INDEX]), Float.parseFloat(csvValues[LONGITUDE_INDEX]));
+		}		
+
 		// Store everything in String array for search purposes
 		this.strValues = csvValues;
 	}
 
 	public HoneypotData() {
+		this.strValues = new String[15];
+		for (int i = 0; i < this.strValues.length; i++) {
+			this.strValues[i] = "";
+		}
 	}
 
 	@Override
@@ -108,24 +203,18 @@ public class HoneypotData implements Comparable<HoneypotData> {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (o == null) {
+	public boolean equals(Object obj) {
+		if (obj == null) {
 			return false;
 		}
-		if (o.getClass() != HoneypotData.class) {
+		if (obj.getClass() != HoneypotData.class) {
 			return false;
 		}
 
-		HoneypotData h = (HoneypotData) o;
+		HoneypotData h = (HoneypotData) obj;
 
 		return Arrays.equals(this.strValues, h.strValues);
 	}
-
-	static final Comparator<HoneypotData> countryComparator = new Comparator<HoneypotData>() {
-		public int compare(HoneypotData hpd1, HoneypotData hpd2) {
-			return hpd1.countryName.compareTo(hpd2.countryName);
-		}
-	};
 
 	public String[] getValueArray() {
 		return strValues;
@@ -159,18 +248,18 @@ public class HoneypotData implements Comparable<HoneypotData> {
 		this.host = host;
 	}
 
-	public String getSourceInt() {
+	public String getSrcIpInt() {
 		return srcIpInt;
 	}
 
-	public void setSourceInt(String sourceInt) {
-		if (sourceInt == null) {
+	public void setSrcIpInt(String srcIpInt) {
+		if (srcIpInt == null) {
 			strValues[2] = "";
 		} else {
 			strValues[2] = datetime.toString();
 		}
 
-		this.srcIpInt = sourceInt;
+		this.srcIpInt = srcIpInt;
 	}
 
 	public Protocol getProtocol() {
@@ -195,7 +284,7 @@ public class HoneypotData implements Comparable<HoneypotData> {
 		if (packetType == null) {
 			strValues[4] = "";
 		} else {
-			strValues[4] = packetType.toString();
+			strValues[4] = packetType;
 		}
 
 		this.packetType = packetType;
@@ -209,7 +298,7 @@ public class HoneypotData implements Comparable<HoneypotData> {
 		if (srcPort == null) {
 			strValues[5] = "";
 		} else {
-			strValues[5] = srcPort.toString();
+			strValues[5] = srcPort;
 		}
 
 		this.srcPort = srcPort;
@@ -223,24 +312,24 @@ public class HoneypotData implements Comparable<HoneypotData> {
 		if (dstPort == null) {
 			strValues[6] = "";
 		} else {
-			strValues[6] = dstPort.toString();
+			strValues[6] = dstPort;
 		}
 
 		this.dstPort = dstPort;
 	}
 
-	public String getSourceIp() {
+	public String getSrcIp() {
 		return srcIp;
 	}
 
-	public void setSourceIp(String sourceIp) {
-		if (sourceIp == null) {
+	public void setSrcIp(String srcIp) {
+		if (srcIp == null) {
 			strValues[7] = "";
 		} else {
-			strValues[7] = sourceIp.toString();
+			strValues[7] = srcIp;
 		}
 
-		this.srcIp = sourceIp;
+		this.srcIp = srcIp;
 	}
 
 	public String getCountryCode() {
@@ -339,5 +428,13 @@ public class HoneypotData implements Comparable<HoneypotData> {
 		}
 
 		this.longitude = longitude;
+	}
+
+	public Coordinates getCoords() {
+		return coords;
+	}
+
+	public void setCoords(Coordinates coords) {
+		this.coords = coords;
 	}
 }
