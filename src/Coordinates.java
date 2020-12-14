@@ -1,12 +1,12 @@
 public class Coordinates {
-    private float lat;
-    private float lon;
+    public final float latitude;
+    public final float longitude;
 
     private static final float TOLERANCE = 1;    // Accuracy of .equals in degrees
 
     public Coordinates(float latitude, float longitude) {
-        lat = latitude;
-        lon = longitude;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     // Returns true if coordinates are within TOLERANCE proximity of each other
@@ -18,6 +18,6 @@ public class Coordinates {
 
 		Coordinates c = (Coordinates) obj;
 
-        return (Math.abs(lat - c.lat) < TOLERANCE && Math.abs(lon - c.lon) < TOLERANCE);
+        return (Math.abs(latitude - c.latitude) < TOLERANCE && Math.abs(longitude - c.longitude) < TOLERANCE);
     }
 }

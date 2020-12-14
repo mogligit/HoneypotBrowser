@@ -15,14 +15,14 @@ public class Start {
 		dataset = new ArrayList<>();
 
 		try {
-			dataset = readFile("LargeDataset-Honeypots.csv");		
+			dataset = readFile("LargeDataset-Honeypots.csv");
 			System.out.println("Dataset loaded correctly.");
 		} catch (FileNotFoundException e) {
 			System.out.println("FileNotFoundException. Dataset not found.");
 		}
 
 		System.out.println("Total: " + dataset.size() + " entries");
-		while(true) {
+		while (true) {
 			switch (menu()) {
 				case 1:
 					displayCountries(dataset);
@@ -72,8 +72,11 @@ public class Start {
 	private static void displayCountries(ArrayList<HoneypotData> dataset) {
 		Long start = Profiling.timeComplexityStart();
 
-		ArrayList<String> countryList = new ArrayList<>(toHashMap(dataset, HoneypotData.COUNTRYNAME_INDEX).keySet());	// Get list of countries
-		Collections.sort(countryList);	// nice alphabetical order
+		ArrayList<String> countryList = new ArrayList<>(toHashMap(dataset, HoneypotData.COUNTRYNAME_INDEX).keySet()); // Get
+																														// list
+																														// of
+																														// countries
+		Collections.sort(countryList); // nice alphabetical order
 
 		Long stop = Profiling.timeComplexityStop(start);
 
@@ -98,7 +101,8 @@ public class Start {
 			return;
 		}
 
-		// Gets list of hosts attacked by this country and puts them in a linear array to then remove duplicates
+		// Gets list of hosts attacked by this country and puts them in a linear array
+		// to then remove duplicates
 		ArrayList<Host> hosts = new ArrayList<>();
 		for (HoneypotData entry : countryDataMap.get(input)) {
 			hosts.add(entry.getHost());
@@ -108,7 +112,7 @@ public class Start {
 
 		Long stop = Profiling.timeComplexityStop(start);
 
-		// Output		
+		// Output
 		System.out.println("\nCountry: " + input + "\nHosts attacked:");
 		for (Host host : hosts) {
 			System.out.println(" - " + host.toString());
@@ -137,7 +141,7 @@ public class Start {
 			searchString += SEPARATION_CHAR;
 		}
 
-		searchString += SEPARATION_CHAR;	// Comma for sourceInt
+		searchString += SEPARATION_CHAR; // Comma for sourceInt
 
 		System.out.print("Protocol: ");
 		try {
@@ -148,7 +152,7 @@ public class Start {
 			searchString += SEPARATION_CHAR;
 		}
 
-		searchString += SEPARATION_CHAR;	// Comma for packetType
+		searchString += SEPARATION_CHAR; // Comma for packetType
 
 		System.out.print("Source port: ");
 		searchString += UserInput.anyString(true) + SEPARATION_CHAR;
@@ -159,7 +163,7 @@ public class Start {
 		System.out.print("Source IPv4: ");
 		searchString += UserInput.ipAddress(true) + SEPARATION_CHAR;
 
-		searchString += SEPARATION_CHAR;	// Comma for country code
+		searchString += SEPARATION_CHAR; // Comma for country code
 
 		System.out.print("Country: ");
 		searchString += UserInput.anyString(true) + SEPARATION_CHAR;
@@ -167,59 +171,25 @@ public class Start {
 		System.out.print("Locale: ");
 		searchString += UserInput.anyString(true) + SEPARATION_CHAR;
 
-		searchString += ",,,";	// Comma for remaining empty fields
+		searchString += ",,,"; // Comma for remaining empty fields
 		searchModel = new HoneypotData(searchString);
 
 		System.out.println("\nResults: ");
-		
-		// Puts entries in a hashmap with the first search criterion that isn't null as key
-		
-		printArray(search(searchModel, dataset).toArray());
+
+		// Puts entries in a hashmap with the first search criterion that isn't null as
+		// key
+
+		printArray(recursiveSearch(searchModel, dataset).toArray());
 	}
-
-	// Recursive search
-	private static ArrayList<HoneypotData> search(HoneypotData searchModel, ArrayList<HoneypotData> dataset) {
-		 int i = findNextFieldIndex(searchModel);
-		 if (i == -1) {
-			 return dataset;
-		 }
-		 
-		 ArrayList<HoneypotData> results = new ArrayList<>();
-		 for (HoneypotData entry : dataset) {
-			 if (searchModel.getFieldFromIndex(i).equals(entry.getFieldFromIndex(i))) {
-				 results.add(entry);
-			 }
-		 }
-
-		 searchModel.setFieldFromIndex(i, null);	// Removes this search criterion so it can move on to the next
-
-		 return search(searchModel, results);
-	}
-	private static int findNextFieldIndex(HoneypotData entry) {
-		for (int i = 0; i < 16; i++) {
-			if (entry.getFieldFromIndex(i) != null) {
-				return i;
-			}
-		}
-		return -1;
-	}
-	private static void printArray(Object[] array) {
-		int i = 0;
-		for(Object entry : array) {
-			System.out.println(entry.toString());
-			i++;
-		}
-
-		System.out.println("Total of " + i + " results.");
-	}
-
 
 	private static void searchIp(ArrayList<HoneypotData> dataset) {
 		System.out.print("Input IPv4 address: ");
 		String inputIp = UserInput.ipAddress();
-		HoneypotData searchModel = new HoneypotData(",,,,,,," + inputIp + ",,,,,,,");
 
-		printArray(search(searchModel, dataset).toArray());
+		HoneypotData searchModel = new HoneypotData();
+		searchModel.setSrcIp(inputIp);
+
+		printArray(recursiveSearch(searchModel, dataset).toArray());
 	}
 
 	private static void searchHost(ArrayList<HoneypotData> dataset) {
@@ -232,9 +202,10 @@ public class Start {
 			return;
 		}
 
-		HoneypotData searchModel = new HoneypotData(SEPARATION_CHAR+ inputHost.toString() + ",,,,,,,,,,,,,");
+		HoneypotData searchModel = new HoneypotData();
+		searchModel.setHost(inputHost);
 
-		printArray(search(searchModel, dataset).toArray());
+		printArray(recursiveSearch(searchModel, dataset).toArray());
 	}
 
 	private static void topOffendingIpAddress(ArrayList<HoneypotData> dataset) {
@@ -245,7 +216,7 @@ public class Start {
 		}
 
 		int topSize = 0;
-		String topIp = "";	// Won't let me build if it isn't initialised even though it'll never be null
+		String topIp = ""; // Won't let me build if it isn't initialised even though it'll never be null
 		for (String srcIp : srcIpMap.keySet()) {
 			int currentSize = srcIpMap.get(srcIp).size();
 			if (currentSize > topSize) {
@@ -258,7 +229,7 @@ public class Start {
 		if (UserInput.bool()) {
 			printArray(srcIpMap.get(topIp).toArray());
 		}
-		
+
 		System.out.println("Top offending IP address: " + topIp);
 	}
 
@@ -288,26 +259,28 @@ public class Start {
 				similarIps.add(ipEntry);
 			}
 		}
-		
-		System.out.println("The following IP addresses are located within 1 degree of latitude and longitude of the given IP:");
-		
+
+		System.out.println(
+				"The following IP addresses are located within 1 degree of latitude and longitude of the given IP:");
+
 		int i = 0;
 		for (String ip : similarIps) {
 			System.out.println(" - " + ip);
 			i++;
 		}
 		System.out.println("Total of " + i + " results.");
-		
+
 	}
 
-	// HashMap with a specified field as keys, and array of entries that contain those values
+	// HashMap with a specified field as keys, and array of entries that contain
+	// those values
 	private static HashMap<String, ArrayList<HoneypotData>> toHashMap(ArrayList<HoneypotData> dataset, int key) {
 		HashMap<String, ArrayList<HoneypotData>> hMap = new HashMap<>();
-		for (int i = 0; i < dataset.size(); i++) {	// loop through dataset
-			if (!hMap.containsKey(dataset.get(i).getValueArray()[key])) {	
-				hMap.put(dataset.get(i).getValueArray()[key], new ArrayList<>());
+		for (int i = 0; i < dataset.size(); i++) { // loop through dataset
+			if (!hMap.containsKey(dataset.get(i).get(key).toString())) {	// If it doesn't contain this key yet
+				hMap.put(dataset.get(i).get(key).toString(), new ArrayList<>());	// Add it
 			}
-			hMap.get(dataset.get(i).getValueArray()[key]).add(dataset.get(i));
+			hMap.get(dataset.get(i).get(key).toString()).add(dataset.get(i));	// Add the element to the array now that there is a key for it
 		}
 		return hMap;
 	}
@@ -337,6 +310,44 @@ public class Start {
 
 		return new ArrayList<>(hashes);
 
+	}
+
+	// Recursive search
+	private static ArrayList<HoneypotData> recursiveSearch(HoneypotData searchModel, ArrayList<HoneypotData> dataset) {
+		int i = findNextFieldIndex(searchModel);
+		if (i == -1) {
+			return dataset;
+		}
+
+		ArrayList<HoneypotData> results = new ArrayList<>();
+		for (HoneypotData entry : dataset) {
+			if (searchModel.get(i).equals(entry.get(i))) {
+				results.add(entry);
+			}
+		}
+
+		searchModel.set(i, null); // Removes this search criterion so it can move on to the next
+
+		return recursiveSearch(searchModel, results);
+	}
+
+	private static int findNextFieldIndex(HoneypotData entry) {
+		for (int i = 0; i < 16; i++) {
+			if (entry.get(i) != null) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	private static void printArray(Object[] array) {
+		int i = 0;
+		for (Object entry : array) {
+			System.out.println(entry.toString());
+			i++;
+		}
+
+		System.out.println("Total of " + i + " results.");
 	}
 
 }

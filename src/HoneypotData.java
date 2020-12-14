@@ -1,9 +1,7 @@
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Comparator;
 
-public class HoneypotData implements Comparable<HoneypotData> {
+public class HoneypotData {
 	private String[] strValues;
 	private LocalDateTime datetime;
 	private Host host;
@@ -18,8 +16,6 @@ public class HoneypotData implements Comparable<HoneypotData> {
 	private String locale;
 	private String localeAbbr;
 	private String postalCode;
-	private String latitude;
-	private String longitude;
 	private Coordinates coords;
 
 	// Set of constants to specify where in the string array these are located
@@ -41,8 +37,8 @@ public class HoneypotData implements Comparable<HoneypotData> {
 	public static final int COORDINATES_INDEX = 15;
 
 	// A makeshift attempt at making this object iterable. Very spaghetti
-	public Object getFieldFromIndex(int i) {
-		switch (i) {
+	public Object get(int index) {
+		switch (index) {
 			case DATETIME_INDEX:
 				return this.datetime;
 			case HOST_INDEX:
@@ -77,49 +73,49 @@ public class HoneypotData implements Comparable<HoneypotData> {
 	}
 
 	// I know it's painful
-	public void setFieldFromIndex(int i, Object value) {
-		switch (i) {
+	public void set(int index, Object newValue) {
+		switch (index) {
 			case DATETIME_INDEX:
-				this.datetime = (LocalDateTime) value;
+				this.datetime = (LocalDateTime) newValue;
 				break;
 			case HOST_INDEX:
-				this.host = (Host) value;
+				this.host = (Host) newValue;
 				break;
 			case SRCIPINT_INDEX:
-				this.srcIpInt = (String) value;
+				this.srcIpInt = (String) newValue;
 				break;
 			case PROTOCOL_INDEX:
-				this.protocol = (Protocol) value;
+				this.protocol = (Protocol) newValue;
 				break;
 			case PACKETTYPE_INDEX:
-				this.packetType = (String) value;
+				this.packetType = (String) newValue;
 				break;
 			case SRCPORT_INDEX:
-				this.srcPort = (String) value;
+				this.srcPort = (String) newValue;
 				break;
 			case DSTPORT_INDEX:
-				this.dstPort = (String) value;
+				this.dstPort = (String) newValue;
 				break;
 			case SRCIP_INDEX:
-				this.srcIp = (String) value;
+				this.srcIp = (String) newValue;
 				break;
 			case COUNTRYCODE_INDEX:
-				this.countryCode = (String) value;
+				this.countryCode = (String) newValue;
 				break;
 			case COUNTRYNAME_INDEX:
-				this.countryName = (String) value;
+				this.countryName = (String) newValue;
 				break;
 			case LOCALE_INDEX:
-				this.locale = (String) value;
+				this.locale = (String) newValue;
 				break;
 			case LOCALEABBR_INDEX:
-				this.localeAbbr = (String) value;
+				this.localeAbbr = (String) newValue;
 				break;
 			case POSTALCODE_INDEX:
-				this.postalCode = (String) value;
+				this.postalCode = (String) newValue;
 				break;
 			case COORDINATES_INDEX:
-				this.coords = (Coordinates) value;
+				this.coords = (Coordinates) newValue;
 				break;
 			default:
 				throw new ArrayIndexOutOfBoundsException();
@@ -162,8 +158,6 @@ public class HoneypotData implements Comparable<HoneypotData> {
 		locale = csvValues[LOCALE_INDEX];
 		localeAbbr = csvValues[LOCALEABBR_INDEX];
 		postalCode = csvValues[POSTALCODE_INDEX];
-		latitude = csvValues[LATITUDE_INDEX];
-		longitude = csvValues[LONGITUDE_INDEX];
 
 		if (!(csvValues[LATITUDE_INDEX].isEmpty() || csvValues[LONGITUDE_INDEX].isEmpty())) {
 			coords = new Coordinates(Float.parseFloat(csvValues[LATITUDE_INDEX]), Float.parseFloat(csvValues[LONGITUDE_INDEX]));
@@ -182,38 +176,21 @@ public class HoneypotData implements Comparable<HoneypotData> {
 
 	@Override
 	public String toString() {
+		String coordinates;
+		if (coords != null) {
+			coordinates = String.valueOf(coords.latitude) + Start.SEPARATION_CHAR + String.valueOf(coords.longitude);
+		} else {
+			coordinates = String.valueOf(Start.SEPARATION_CHAR);
+		}
+
 		return formatDateTime(datetime) + Start.SEPARATION_CHAR + host + Start.SEPARATION_CHAR + srcIpInt + Start.SEPARATION_CHAR + protocol.toString()
 				+ Start.SEPARATION_CHAR + packetType + Start.SEPARATION_CHAR + srcPort + Start.SEPARATION_CHAR + dstPort + Start.SEPARATION_CHAR + srcIp + Start.SEPARATION_CHAR
 				+ countryCode + Start.SEPARATION_CHAR + countryName + Start.SEPARATION_CHAR + locale + Start.SEPARATION_CHAR + localeAbbr + Start.SEPARATION_CHAR
-				+ postalCode + Start.SEPARATION_CHAR + latitude + Start.SEPARATION_CHAR + longitude;
+				+ postalCode + Start.SEPARATION_CHAR + coordinates;
 	}
 
 	private String formatDateTime(LocalDateTime datetime) {
 		return datetime.format(DateTimeFormatter.ofPattern("dd/MM/yy HH:mm"));
-	}
-
-	@Override
-	public int compareTo(HoneypotData o) {
-		return this.datetime.compareTo(o.datetime);
-	}
-
-	// Compares certain fields
-	public int compareTo(HoneypotData o, Comparator<HoneypotData> c) {
-		return c.compare(this, o);
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null) {
-			return false;
-		}
-		if (obj.getClass() != HoneypotData.class) {
-			return false;
-		}
-
-		HoneypotData h = (HoneypotData) obj;
-
-		return Arrays.equals(this.strValues, h.strValues);
 	}
 
 	public String[] getValueArray() {
@@ -400,34 +377,6 @@ public class HoneypotData implements Comparable<HoneypotData> {
 		}
 
 		this.postalCode = postalCode;
-	}
-
-	public String getLatitude() {
-		return latitude;
-	}
-
-	public void setLatitude(String latitude) {
-		if (latitude == null) {
-			strValues[13] = "";
-		} else {
-			strValues[13] = latitude;
-		}
-
-		this.latitude = latitude;
-	}
-
-	public String getLongitude() {
-		return longitude;
-	}
-
-	public void setLongitude(String longitude) {
-		if (longitude == null) {
-			strValues[14] = "";
-		} else {
-			strValues[14] = longitude;
-		}
-
-		this.longitude = longitude;
 	}
 
 	public Coordinates getCoords() {
