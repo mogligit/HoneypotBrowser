@@ -15,7 +15,7 @@ public class Start {
 		dataset = new ArrayList<>();
 
 		try {
-			dataset = readFile("LargeDataset-Honeypots.csv");		
+			dataset = readFile("TinyDataset-Honeypots.csv");		
 			System.out.println("Dataset loaded correctly.");
 		} catch (FileNotFoundException e) {
 			System.out.println("FileNotFoundException. Dataset not found.");
@@ -293,7 +293,7 @@ public class Start {
 		HashMap<String, ArrayList<HoneypotData>> hMap = new HashMap<>();
 		for (int i = 0; i < dataset.size(); i++) {	// loop through dataset
 			if (!hMap.containsKey(dataset.get(i).getValueArray()[key])) {	
-				hMap.put(dataset.get(i).getValueArray()[key], new ArrayList<HoneypotData>());
+				hMap.put(dataset.get(i).getValueArray()[key], new ArrayList<>());
 			}
 			hMap.get(dataset.get(i).getValueArray()[key]).add(dataset.get(i));
 		}
