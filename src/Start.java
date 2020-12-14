@@ -15,7 +15,7 @@ public class Start {
 		dataset = new ArrayList<>();
 
 		try {
-			dataset = readFile("TinyDataset-Honeypots.csv");		
+			dataset = readFile("LargeDataset-Honeypots.csv");		
 			System.out.println("Dataset loaded correctly.");
 		} catch (FileNotFoundException e) {
 			System.out.println("FileNotFoundException. Dataset not found.");
@@ -25,25 +25,25 @@ public class Start {
 		while(true) {
 			switch (menu()) {
 				case 1:
-					displayCountries(new ArrayList<>(dataset));
+					displayCountries(dataset);
 					break;
 				case 2:
-					displayHostsPerCountry(new ArrayList<>(dataset));
+					displayHostsPerCountry(dataset);
 					break;
 				case 3:
-					searchAttack(new ArrayList<>(dataset));
+					searchAttack(dataset);
 					break;
 				case 4:
-					searchIp(new ArrayList<>(dataset));
+					searchIp(dataset);
 					break;
 				case 5:
-					searchHost(new ArrayList<>(dataset));
+					searchHost(dataset);
 					break;
 				case 6:
-					topOffendingIpAddress(new ArrayList<>(dataset));
+					topOffendingIpAddress(dataset);
 					break;
 				case 7:
-					findSimilarAttacks(new ArrayList<>(dataset));
+					findSimilarAttacks(dataset);
 					break;
 				case 0:
 					return;
@@ -70,20 +70,28 @@ public class Start {
 	}
 
 	private static void displayCountries(ArrayList<HoneypotData> dataset) {
+		Long start = Profiling.timeComplexityStart();
+
 		ArrayList<String> countryList = new ArrayList<>(toHashMap(dataset, HoneypotData.COUNTRYNAME_INDEX).keySet());	// Get list of countries
 		Collections.sort(countryList);	// nice alphabetical order
 
+		Long stop = Profiling.timeComplexityStop(start);
+
 		System.out.println("List of countries:");
 		printArray(countryList.toArray());
+
+		System.out.println(stop.toString() + " ms");
 	}
 
 	private static void displayHostsPerCountry(ArrayList<HoneypotData> dataset) {
 		System.out.println("Hosts attacked per country");
 
-		HashMap<String, ArrayList<HoneypotData>> countryDataMap = toHashMap(dataset, HoneypotData.COUNTRYNAME_INDEX);
-
 		System.out.print("Input country: ");
 		String input = UserInput.anyString();
+
+		Long start = Profiling.timeComplexityStart();
+
+		HashMap<String, ArrayList<HoneypotData>> countryDataMap = toHashMap(dataset, HoneypotData.COUNTRYNAME_INDEX);
 
 		if (!countryDataMap.containsKey(input)) {
 			System.out.println("Country was not found.");
@@ -98,6 +106,8 @@ public class Start {
 		// Remove duplicates
 		hosts = removeDuplicates(hosts);
 
+		Long stop = Profiling.timeComplexityStop(start);
+
 		// Output		
 		System.out.println("\nCountry: " + input + "\nHosts attacked:");
 		for (Host host : hosts) {
@@ -105,6 +115,8 @@ public class Start {
 		}
 
 		System.out.println("Total of " + hosts.size());
+
+		System.out.println(stop.toString() + " ms");
 
 	}
 
